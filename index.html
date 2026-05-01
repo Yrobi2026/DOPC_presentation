@@ -2242,7 +2242,7 @@
 
 <!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <button class="lightbox-close">✕</button>
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
   <img id="lightboxImg" src="" alt="">
 </div>
 
@@ -2250,22 +2250,6 @@
   let photos = [];
   let currentFilter = 'all';
   let pendingFile = null;
-
-  function showPage(name) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-links a, .nav-links span').forEach(a => a.classList.remove('active'));
-
-    const page = document.getElementById('page-' + name);
-    if (page) page.classList.add('active');
-
-    const nav = document.getElementById('nav-' + name);
-    if (nav) nav.classList.add('active');
-    else {
-      const speNav = document.getElementById('nav-spe');
-      if (speNav) speNav.classList.add('active');
-    }
-    window.scrollTo(0, 0);
-  }
 
   // Gallery
   function openUploadModal() {
@@ -2326,21 +2310,27 @@
         const realIdx = photos.indexOf(photo);
         const div = document.createElement('div');
         div.className = 'gallery-item';
+        div.dataset.src = photo.src;
         div.innerHTML = `
-          <img src="${photo.src}" alt="${photo.caption}" onclick="openLightbox('${photo.src}')">
+          <img src="${photo.src}" alt="${photo.caption.replace(/"/g, '&quot;')}">
           <div class="gallery-item-overlay">
             <span class="gallery-item-tag">${photo.unit.toUpperCase()}</span>
             <span class="gallery-item-caption">${photo.caption}</span>
           </div>
-          <button class="gallery-item-del" onclick="deletePhoto(${realIdx}, event)" title="Supprimer">✕</button>
+          <button class="gallery-item-del" data-idx="${realIdx}" title="Supprimer">✕</button>
         `;
+        div.querySelector('img').addEventListener('click', () => openLightbox(photo.src));
+        div.querySelector('.gallery-item-del').addEventListener('click', (e) => {
+          e.stopPropagation();
+          deletePhoto(parseInt(e.currentTarget.dataset.idx), e);
+        });
         grid.appendChild(div);
       });
     }
   }
 
   function deletePhoto(idx, e) {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     photos.splice(idx, 1);
     renderGallery();
   }
@@ -2375,7 +2365,7 @@
     { label: 'UMIP — Intervention & Protection', page: 'umip', keywords: ['umip','intervention','otage','armé','protection','institution'] },
     { label: 'CCSR — Circulation Routière', page: 'ccsr', keywords: ['ccsr','circulation','moto','routière','escorte','trafic'] },
     { label: 'BRAV-M — Brigade Motorisée', page: 'bravm', keywords: ['brav','motorisé','violent','casseur','moto','brigade'] },
-    { label: 'CI — Compagnie d'Intervention', page: 'ci', keywords: ['ci','compagnie','intervention','interpellation','contact'] },
+    { label: "CI — Compagnie d'Intervention", page: 'ci', keywords: ['ci','compagnie','intervention','interpellation','contact'] },
   ];
 
   function doSearch(val) {
@@ -2475,8 +2465,7 @@
     document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
   }
 
-  // ===== PAGE NAVIGATION (enhanced) =====
-  const _origShowPage = window.showPage;
+  // ===== PAGE NAVIGATION =====
   function showPage(name) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active', 'page-enter'));
     document.querySelectorAll('.nav-links a, .nav-links span').forEach(a => a.classList.remove('active'));
@@ -2511,6 +2500,8 @@
   // ===== INIT =====
   document.addEventListener('DOMContentLoaded', () => {
     setupObservers();
+    // La page accueil est active par défaut : lancer les compteurs immédiatement
+    countersStarted = false;
     tryStartCounters();
   });
 </script>
